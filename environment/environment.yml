@@ -1,0 +1,34 @@
+name: kaggle-predict-sales
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.7.3
+  - bokeh
+  - py-xgboost
+  - numpy
+  - bottleneck
+  - jupyterlab
+  - nodejs
+  - dask-xgboost
+  - seaborn
+  - notebook
+  - pandas
+  - h5py
+  - tornado
+  - python-graphviz
+  - pyarrow
+  - nbserverproxy
+  - dask
+  - numba
+  - dask-ml
+  - matplotlib
+  - dask-image
+  - requests
+  - pip
+  - nomkl
+  - scikit-learn
+  - xarray
+  - nteract_on_jupyter
+prefix: /Users/tomewing/anaconda3/envs/kaggle-predict-sales
+
