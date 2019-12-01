@@ -2,6 +2,7 @@
 config/
 data/
 dask-worker-space/
+main.ipynb
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
