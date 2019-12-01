@@ -15,7 +15,6 @@ def import_data(dataset):
     filename = dataset['filename']
     df_name = dataset['df_name']
 
-    # Execute
     df = dd.read_csv(
         f'gcs://{bucket_name}/{import_data_folder}/{filename}'
     )
