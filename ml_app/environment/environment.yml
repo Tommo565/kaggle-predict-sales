@@ -30,5 +30,7 @@ dependencies:
   - scikit-learn
   - xarray
   - nteract_on_jupyter
+  - fbprophet
+  - qgrid
 prefix: /Users/tomewing/anaconda3/envs/kaggle-predict-sales
 
