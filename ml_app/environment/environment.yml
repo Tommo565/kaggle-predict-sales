@@ -32,5 +32,11 @@ dependencies:
   - nteract_on_jupyter
   - fbprophet
   - qgrid
+  - google-cloud-bigquery-storage
+  - google-cloud-bigquery
+  - google-cloud-storage
+  - pandas-gbq
+  - gcsfs
+  - pytest
 prefix: /Users/tomewing/anaconda3/envs/kaggle-predict-sales
 
