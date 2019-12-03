@@ -5,9 +5,43 @@ import dask.dataframe as dd
 @delayed
 def import_data(dataset):
     """
-    Imports a csv file as a dask dataframe.
-    Designed to be mapped to a list of dicts containing dataset details.
-    Delayed.
+    Summary
+    -------
+    Imports a csv file as a dask dataframe. Designed to be applied to a list of
+    dicts containing dataset details via map(). Processing is delayed via the
+    Dask @delayed decorator. See the Dask documentation for more details.
+
+    Parameters
+    ----------
+    dataset: dict
+
+    Keys / values for the dataset dict are as follows:
+
+        bucket_name: str
+            The name of the GCP bucket containing the csv dataset
+        import_data_folder: str
+            The folder inside the GCP bucket that contains the
+            csv dataset
+        filename: str
+            The filename of the csv dataset
+        df_name: str
+            The name to assign the dataframe in the output dict
+
+    Returns
+    -------
+    output: dict
+
+    Keys / values for the output dict are as follows:
+
+        df_name: str
+            The name assigned to the dataframe
+        df: dask.dataframe
+            A dask dataframe containing imported csv data
+
+    Example
+    --------
+    df_list = list(map(import_data, datasets))
+
     """
 
     bucket_name = dataset['bucket_name']
@@ -19,14 +53,40 @@ def import_data(dataset):
         f'gcs://{bucket_name}/{import_data_folder}/{filename}'
     )
 
-    return dict(df_name=df_name, df=df)
+    output = dict(df_name=df_name, df=df)
+
+    return output
 
 
 @delayed
 def merge_data(df_list):
     """
-    Merges the three datasets in the dd_out object together.
-    Delayed.
+    Summary
+    -------
+    Merges the three datasets in the df_list object together and formats the
+    date column in the df_sl dataset as DateTime. Processing is delayed via the
+    Dask @delayed decorator. See the Dask documentation for more details.
+
+    Parameters
+    ----------
+    df_list: list
+
+    A list of dict objects. Keys / values for the dict objects are as follows:
+
+        df_name: str
+            The name assigned to the dataframe
+        df: dask.dataframe
+            A dask dataframe containing imported csv data
+
+    Returns
+    -------
+    df: dask.dataframe
+    A dask dataframe containing imported & merged csv data
+
+    Example
+    -------
+    df_out = merge_data(df_list)
+
     """
 
     for df in df_list:
@@ -45,11 +105,11 @@ def merge_data(df_list):
     )
 
     df = df_sl.merge(
-            right=df,
-            left_on='item_id',
-            right_on='item_id',
-            how='left'
-        )
+        right=df,
+        left_on='item_id',
+        right_on='item_id',
+        how='left'
+    )
     df['date'] = dd.to_datetime(df['date'])
 
     return df
@@ -57,7 +117,36 @@ def merge_data(df_list):
 
 def import_merge_data(datasets):
     """
-    Wrapper function for the import_data and merge_data functions
+    Summary
+    -------
+    Wrapper function for the import_data and merge_data functions. Imports csv
+    datasets from a GCP GCS bucker and merges these together, outputing a Dask
+    dataframe.
+
+    Parameters
+    ----------
+    datasets: list
+
+    A list of dict objects. Keys / values for the dict objects are as follows:
+
+        bucket_name: str
+            The name of the GCP bucket containing the csv datasets
+        import_data_folder: str
+            The folder inside the GCP bucket that contains the
+            csv datasets
+        filename: str
+            The filename of the csv dataset
+        df_name: str
+            The name to assign the dataframe in the output dict
+
+    Returns
+    -------
+    df: dask.dataframe
+    A dask dataframe containing imported & merged csv data
+
+    Example
+    -------
+    df = import_merge_data(datasets)
     """
 
     df_list = list(map(import_data, datasets))
