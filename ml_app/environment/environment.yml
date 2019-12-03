@@ -37,5 +37,6 @@ dependencies:
   - google-cloud-storage
   - pandas-gbq
   - gcsfs
+  - pytest
 prefix: /Users/tomewing/anaconda3/envs/kaggle-predict-sales
 

@@ -55,7 +55,7 @@ def merge_data(df_list):
     return df
 
 
-def import_merge_data(datasets, bucket_name, import_data_folder):
+def import_merge_data(datasets):
     """
     Wrapper function for the import_data and merge_data functions
     """

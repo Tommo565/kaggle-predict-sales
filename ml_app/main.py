@@ -11,7 +11,9 @@ if __name__ == '__main__':
     os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = gcp_token
 
     # Set the local Dask cluster
+    print('Configuring local Dask cluster')
     client = Client(n_workers=3, threads_per_worker=4)
 
     # Import and merge the datasets
-    df = import_merge_data(datasets, bucket_name, import_data_folder)
+    print('Importing & Merging datasets')
+    df = import_merge_data(datasets)
