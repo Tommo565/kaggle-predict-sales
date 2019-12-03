@@ -1,8 +1,10 @@
 # Custom
-config/
+config.py
+gcp_token.json
 data/
 dask-worker-space/
 main.ipynb
+test.ipynb
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
