@@ -2,22 +2,22 @@ import os
 from dask import compute
 from pandas import Timestamp
 from config import gcp_token
-from parameters import test_datasets
-from app.import_merge.import_merge import (
-    import_data, merge_data, import_merge_data
+from parameters import import_merge_test_data, export_test_data
+from app.ingest.import_merge import (
+    import_gcs_data, merge_data, import_merge_data
 )
 
 # Set the GCP authentication credentials
 os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = gcp_token
 
 
-def test_import_data(test_datasets=test_datasets):
+def test_import_gcs_data(import_merge_test_data=import_merge_test_data):
     """
     Unit test for the import_data function
     """
 
     # Function execution
-    df_list = list(map(import_data, test_datasets))
+    df_list = list(map(import_gcs_data, import_merge_test_data))
     df_list = compute(compute(df_list)[0])[0]
 
     # Tests
@@ -32,11 +32,11 @@ def test_import_data(test_datasets=test_datasets):
     assert df_list[1]['df']['test_it'][2] == '1'
 
 
-def test_merge_data(test_datasets=test_datasets):
+def test_merge_data(import_merge_test_data=import_merge_test_data):
     """Unit test for the merge_data function"""
 
     # Function execution
-    df_list = list(map(import_data, test_datasets))
+    df_list = list(map(import_gcs_data, import_merge_test_data))
     df_list = compute(compute(df_list)[0])[0]
     df = compute(merge_data(df_list))[0]
 
@@ -51,11 +51,14 @@ def test_merge_data(test_datasets=test_datasets):
     assert df['test_ic'][0] == 'Hello World'
 
 
-def test_import_merge_data(test_datasets=test_datasets):
+def test_import_merge_data(
+    import_merge_test_data=import_merge_test_data,
+    export_test_data=export_test_data
+):
     """Unit test for the import_merge_data function"""
 
     # Function execution
-    df = import_merge_data(test_datasets)
+    df = import_merge_data(import_merge_test_data, export_test_data)
 
     # Tests
     assert df.shape == (4, 6)

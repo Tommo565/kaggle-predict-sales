@@ -31,12 +31,14 @@ TODO: What this does at a high level.
 
 ## Design & Architecture
 
-Picture of technical design.
+![](./img/design.png)
 
 ## Directory Structure
 ```
 ├── README.md
+├── analysis
 ├── data
+├── img
 └── ml_app
     ├── __init__.py
     ├── analysis

@@ -1,6 +1,6 @@
 from config import test_bucket_name, test_import_data_folder
 
-test_datasets = [
+import_merge_test_data = [
     dict(
         bucket_name=test_bucket_name,
         import_data_folder=test_import_data_folder,
@@ -20,3 +20,9 @@ test_datasets = [
         df_name='df_ic'
     )
 ]
+
+export_test_data = dict(
+    bucket_name=test_bucket_name,
+    export_data_folder=test_import_data_folder,
+    filename='test_merged_data'
+)

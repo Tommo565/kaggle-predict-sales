@@ -38,5 +38,6 @@ dependencies:
   - pandas-gbq
   - gcsfs
   - pytest
+  - pandas-profiling
 prefix: /Users/tomewing/anaconda3/envs/kaggle-predict-sales
 

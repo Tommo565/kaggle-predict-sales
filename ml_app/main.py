@@ -1,8 +1,11 @@
 import os
 from dask.distributed import Client, progress
-from config import gcp_token, bucket_name, import_data_folder
-from parameters import datasets
-from app.import_merge.import_merge import import_merge_data
+from config import (
+    gcp_token, bucket_name, import_data_folder,
+    local_export_folder
+)
+from parameters import import_data, export_data
+from app.ingest.import_merge import import_merge_data
 
 
 if __name__ == '__main__':
@@ -16,4 +19,4 @@ if __name__ == '__main__':
 
     # Import and merge the datasets
     print('Importing & Merging datasets')
-    df = import_merge_data(datasets)
+    df = import_merge_data(import_data, export_data)
