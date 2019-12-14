@@ -24,5 +24,5 @@ import_merge_test_data = [
 export_test_data = dict(
     bucket_name=test_bucket_name,
     export_data_folder=test_import_data_folder,
-    filename='test_merged_data'
+    filename='test_merged_data.csv'
 )

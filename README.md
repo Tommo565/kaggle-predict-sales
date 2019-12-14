@@ -59,7 +59,22 @@ TODO: What this does at a high level.
 
 ## Processing
 
-Details of the various processing modules
+Details of the various processing modules... TBC
+
+# To be Explored
+
+* Featuretools
+* MLFlow
+* CI/CD
+* Docker
+* Config Management
+
+## TODO
+
+1. Parallelize Resampling
+2. Add in shop_id as a feature
+3. Export to BQ
+4. Run in Cloud
 
 ## Useful Links
 * [Kaggle Predict Future Sales](https://www.kaggle.com/c/competitive-data-science-predict-future-sales)

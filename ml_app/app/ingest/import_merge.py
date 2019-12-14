@@ -1,63 +1,8 @@
 from dask import delayed, compute
-import dask.dataframe as dd
+import pandas as pd
 import gcsfs
 
 
-def import_merge_data(import_data, export_data):
-    """
-    Summary
-    -------
-    Wrapper function for the import_data and merge_data functions. Imports csv
-    datasets from a GCS bucket and merges these together, outputing a Dask
-    dataframe.
-
-    Parameters
-    ----------
-    import_data: list
-
-        A list of dict objects. Keys / values for the dict objects are as
-        follows:
-
-            bucket_name: str
-                The name of the GCS bucket containing the csv datasets
-            import_data_folder: str
-                The folder inside the GCS bucket that contains the csv datasets
-            filename: str
-                The filename of the csv dataset.
-            df_name: str
-                The name to assign the dataframe in the output dict
-
-    export_data: dict
-        Export parameters for the dataframe. Key / values as follows:
-
-            bucket_name: str
-                The name of the GCS bucket to export the file to
-
-            export_data_folder: str
-                The folder inside the GCP bucket that will hold the file
-
-            filename: str
-                The filename for the csv
-
-    Returns
-    -------
-    df: dask.dataframe
-    A dask dataframe containing imported & merged csv data
-
-    Example
-    -------
-    df = import_merge_data(import_data, export_data)
-    """
-
-    df_list = list(map(import_gcs_data, import_data))
-    df_out = merge_data(df_list)
-    df = compute(df_out)[0].compute()
-    df = export_data_gcs(df, export_data)
-
-    return df
-
-
-@delayed
 def import_gcs_data(import_data):
     """
     Summary
@@ -90,7 +35,7 @@ def import_gcs_data(import_data):
 
         df_name: str
             The name assigned to the dataframe
-        df: dask.dataframe
+        df: pandas.DataFrame
             A dask dataframe containing imported csv data
 
     Example
@@ -104,33 +49,21 @@ def import_gcs_data(import_data):
     filename = import_data['filename']
     df_name = import_data['df_name']
 
-    df = dd.read_csv(
-        f'gcs://{bucket_name}/{import_data_folder}/{filename}'
+    df = pd.read_csv(f'gcs://{bucket_name}/{import_data_folder}/{filename}')
+    df = df.drop_duplicates()
+    output = dict(
+        df_name=df_name,
+        df=df
     )
-    df.drop_duplicates(inplace=True)
-
-    output = dict(df_name=df_name, df=df)
 
     return output
 
 
-@delayed
-def resample_time_series(df, frequency):
-    """
-
-    """
-
-    df = df[[]]
-
-
-@delayed
 def merge_data(df_list):
     """
     Summary
     -------
-    Merges the three datasets in the df_list object together and formats the
-    date column in the df_sl dataset as DateTime. Processing is delayed via the
-    Dask @delayed decorator. See the Dask documentation for more details.
+    Merges all three datasets in the df_list object together.
 
     Parameters
     ----------
@@ -145,8 +78,8 @@ def merge_data(df_list):
 
     Returns
     -------
-    df: dask.dataframe
-    A dask dataframe containing imported & merged csv data
+    df: pandas.DataFrame
+    A pandas dataframe containing imported & merged csv data
 
     Example
     -------
@@ -154,6 +87,7 @@ def merge_data(df_list):
 
     """
 
+    # Unpack the dictionary of dataframes
     for df in df_list:
         if df['df_name'] == 'df_sl':
             df_sl = df['df'].copy()
@@ -175,7 +109,8 @@ def merge_data(df_list):
         right_on='item_id',
         how='left'
     )
-    df['date'] = dd.to_datetime(df['date'])
+
+    df['date'] = pd.to_datetime(df['date'])
 
     return df
 
@@ -222,15 +157,18 @@ def export_data_gcs(df, export_data):
     filename = export_data['filename']
 
     # GCS export
+    print(f'Exporting {filename} to GCS')
+
     df.to_csv(
-        path_or_buf=f'gcs://{bucket_name}/{export_data_folder}/{filename}',
-        index=False
+        f'gcs://{bucket_name}/{export_data_folder}/{filename}',
+        index=False,
     )
 
+    print(f'Exporting {filename} to {local_export_folder}')
     # Local export
     df.to_csv(
-        path_or_buf=f'{local_export_folder}/{filename}',
-        index=False
+        f'{local_export_folder}/{filename}',
+        index=False,
     )
 
     return df
