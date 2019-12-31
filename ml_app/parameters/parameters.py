@@ -1,54 +1,54 @@
 from config import (
-    bucket_name, import_data_folder, export_data_folder, local_export_folder
+    project_id, bucket_name, import_data_folder, export_data_folder,
+    local_export_folder, bq_db
 )
 
-'''Ingest Parameters'''
+'''General Parameters'''
+uid = 'item_id'
+time_index = 'date'
+target_rename = dict(item_cnt_day='target')
+target = target_rename['item_cnt_day']
 
-import_data = [
+'''Ingest Parameters'''
+import_datasets = [
     dict(
+        local_path='../data/input_data',
         bucket_name=bucket_name,
         import_data_folder=import_data_folder,
         filename='sales_train.csv',
         df_name='df_sl'
     ),
     dict(
+        local_path='../data/input_data',
         bucket_name=bucket_name,
         import_data_folder=import_data_folder,
         filename='items.csv',
         df_name='df_it'
     ),
     dict(
+        local_path='../data/input_data',
         bucket_name=bucket_name,
         import_data_folder=import_data_folder,
         filename='item_categories.csv',
         df_name='df_ic'
+    ),
+    dict(
+        local_path='../data/input_data',
+        bucket_name=bucket_name,
+        import_data_folder=import_data_folder,
+        filename='shops.csv',
+        df_name='df_sp'
     )
 ]
 
-export_ingest_data = dict(
-    bucket_name=bucket_name,
-    export_data_folder=export_data_folder,
-    local_export_folder=local_export_folder,
-    filename='merged_data.csv'
-)
-
 
 '''Feature Engineering Parameters'''
-
-# Dict to rename the target
-target_rename = dict(item_cnt_day='target')
-
-# The target for the model
-target = target_rename['item_cnt_day']
-
-# The time index
-time_index = 'date'
 
 # Categorical features
 categorical_features = ['item_id', 'item_category_id']
 
 # Numeric featres
-numeric_features = []
+numeric_features = ['item_price']
 
 # All columns for the dataframe
 all_columns = categorical_features + numeric_features + [time_index] + [target]
@@ -60,3 +60,13 @@ all_features_time_index = (
 
 # All feature columns for the dataframe
 all_features = categorical_features + numeric_features
+
+# Features export
+export_features_data = dict(
+    project_id=project_id,
+    bucket_name=bucket_name,
+    export_data_folder=export_data_folder,
+    local_export_folder=local_export_folder,
+    filename='features',
+    bq_db=bq_db
+)

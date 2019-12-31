@@ -4,7 +4,7 @@ from dask import delayed, compute
 from fbprophet import Prophet
 
 
-def create_all_time_series(df, time_index, target, all_features):
+def process_all_time_series(df, time_index, target, all_features):
     """
     Summary
     -------
