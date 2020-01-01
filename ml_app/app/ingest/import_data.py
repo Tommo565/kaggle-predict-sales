@@ -3,13 +3,12 @@ import pandas as pd
 import gcsfs
 
 
-def import_data(import_datasets, local='Y'):
+def import_data(import_datasets, local='N'):
     """
     Summary
     -------
     Imports a csv file as a dask dataframe. Designed to be applied to a list of
-    dicts containing dataset details via map(). Processing is delayed via the
-    Dask @delayed decorator. See the Dask documentation for more details.
+    dicts containing dataset details via map().
 
     Parameters
     ----------
@@ -45,7 +44,7 @@ def import_data(import_datasets, local='Y'):
 
     Example
     --------
-    df_list = list(map(import_data, datasets))
+    df_list = list(map(import_data, import_datasets, local='Y')
 
     """
 

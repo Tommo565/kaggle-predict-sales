@@ -147,5 +147,3 @@ def export_data(df, export_data, local='Y', gcs='Y', bq='Y'):
             destination_table=f'{bq_db}.{filename}',
             if_exists='replace'
         )
-
-    return df

@@ -2,12 +2,13 @@ import os
 from dask.distributed import Client, progress
 from config import (
     local, gcp_token, project_id, bucket_name, import_data_folder,
-    export_data_folder, local_export_folder, bq_db
+    export_data_folder, local_export_folder, bq_db, n_workers,
+    threads_per_worker, dashboard_address
 )
 from parameters import (
     uid, import_datasets, target_rename, target, time_index,
     all_columns, all_features_time_index, all_features, categorical_features,
-    export_features_data
+    export_features_data, export_ts_data
 )
 from app.ingest.import_data import import_data, unpack_data
 from app.ingest.clean_data import (
@@ -20,15 +21,16 @@ from app.models.time_series import create_all_time_series
 
 if __name__ == '__main__':
 
-    # Configuration
+    # GCP Configuration
     print('Configuring GCP credentials')
     os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = gcp_token
 
+    # Dask Configuration
     print('Configuring Dask cluster')
     client = Client(
-        n_workers=4,
-        threads_per_worker=4,
-        dashboard_address=':8785'
+        n_workers=n_workers,
+        threads_per_worker=threads_per_worker,
+        dashboard_address=dashboard_address
     )
 
     # Processing
@@ -39,7 +41,7 @@ if __name__ == '__main__':
     print('Cleaning & merging datasets')
     df_sl = clean_sales_data(df_sl, time_index, uid, target_rename)
     df_ip = clean_item_price_data(df_ip, time_index, uid)
-    df = merge_data(uid, df_sl, df_ip, df_it)
+    df = merge_data(df_sl, df_ip, df_it, uid)
 
     print('Creating features')
     df, all_columns, all_features, all_features_time_index = (
@@ -50,3 +52,9 @@ if __name__ == '__main__':
 
     print('Exporting features')
     export_data(df, export_features_data, local='Y', gcs='N', bq='Y')
+
+    print('Generating Time Series')
+    df_ts_all = create_all_time_series(df, uid, time_index, target)
+
+    print('Exporting Time Series')
+    export_data(df, export_ts_data, local='Y', gcs='N', bq='Y')

@@ -70,3 +70,13 @@ export_features_data = dict(
     filename='features',
     bq_db=bq_db
 )
+
+# Time Series Export
+export_ts_data = dict(
+    project_id=project_id,
+    bucket_name=bucket_name,
+    export_data_folder=export_data_folder,
+    local_export_folder=local_export_folder,
+    filename='time_series',
+    bq_db=bq_db
+)

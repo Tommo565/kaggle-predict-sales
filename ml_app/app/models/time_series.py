@@ -4,13 +4,16 @@ from dask import delayed, compute
 from fbprophet import Prophet
 
 
-def process_all_time_series(df, time_index, target, all_features):
+def create_all_time_series(df, uid, time_index, target):
     """
     Summary
     -------
     Groups a dataframe and generates a time series using Prophet for each group
     via the create_single_time_series function which is delayed and processed
     in parallel via Dask.
+
+    Only records where the last 6 months sales are greater than 6 and the
+    latest month is greater than 0 are processed.
 
     This outputs a list of dictionary records which is then convered to a
     pandas dataframe and returned.
@@ -20,59 +23,73 @@ def process_all_time_series(df, time_index, target, all_features):
     df: pandas.DataFrame
         The dataframe containing the records to generate a time series for.
 
+    uid: str
+        The name of the column containing the unique id
+
+    time_index: str
+        The name of the column containing the time index
+
+    target: str
+        The name od the column containing the target variable to predict
+
+
     Returns
     -------
-    df: pandas.DataFrame
-        A pandas dataframe containing the base features alongside the output
-        from the Prophet predict method.
+    df_ts_all: pandas.DataFrame
+        A pandas dataframe containing time series data for the relevent records
+        of the input dataframe
 
     Example
     --------
-    df = process_all_time_series(df)
+    df_ts_all = create_all_time_series(df, uid, time_index, target)
 
     """
-    df = df.rename({
-        time_index: 'ds',
-        target: 'y'
-    }, axis=1)
+    df_ts = (
+        df[[uid, time_index, target]]
+        .rename({
+            time_index: 'ds',
+            target: 'y'
+        }, axis=1)
+    )
 
-    # Group the dataframe
-    df_grouped = df.groupby(all_features)
+    # Group the dataframe by unique id
+    df_ts_gp = df_ts.groupby(uid)
 
-    # Blank output list to append results to
-    time_series_output = []
+    # Create an output list to append results to
+    ts_output = []
 
-    # Iterate through the groups and generate time series for each
-    for group in df_grouped.groups:
-        df = df_grouped.get_group(group)
-        ts_dict = create_single_time_series(df)
-        time_series_output.append(ts_dict)
+    # Generate a time series for each appropriate record
+    for group in df_ts_gp.groups:
+        df_ts = df_ts_gp.get_group(group)
+        if (df_ts['y'].tail(6).sum() > 6) & (df_ts['y'].tail(1).sum() > 1):
+            ts_dict = create_single_time_series(df_ts)
+            ts_output.append(ts_dict)
 
-    # Compute the delayed output list
-    time_series_output = compute(time_series_output)[0]
+    # Compute the time series via dask
+    ts_output = compute(ts_output)[0]
 
     # Create an empty list to iterate the results into
-    df_list = []
+    records_list = []
 
     # Create a list of records for conversion to a dataframe
-    for item in time_series_output:
+    for item in ts_output:
         for record in item:
-            df_list.append(record)
+            records_list.append(record)
 
     # Convert the output list to a dataframe
-    df = (
-        pd.DataFrame(df_list)
+    df_ts_all = (
+        pd.DataFrame(records_list)
         .rename({
             'ds': time_index,
             'y': target
         }, axis=1)
     )
 
-    return df
+    return df_ts_all
 
 
 @delayed
-def create_single_time_series(df):
+def create_single_time_series(df_ts):
     """
     Summary
     -------
@@ -84,7 +101,7 @@ def create_single_time_series(df):
 
     Parameters
     ----------
-    df: pandas.DataFrame
+    df_ts: pandas.DataFrame
         A group within a dataframe to create a time series for.
 
     Returns
@@ -95,13 +112,12 @@ def create_single_time_series(df):
 
     Example
     --------
-    for group in df_grouped.groups:
-        df = df_grouped.get_group(group)
-        ts_dict = create_single_time_series(df)
-        output.append(ts_dict)
+    for group in df_ts_gp.groups:
+        df_ts = df_ts_gp.get_group(group)
+        if (df_ts['y'].tail(6).sum() > 6) & (df_ts['y'].tail(1).sum() > 1):
+            ts_dict = create_single_time_series(df_ts)
+            ts_output.append(ts_dict)
     """
-
-    print(df.columns)
 
     # Create the model
     model = Prophet(
@@ -120,20 +136,24 @@ def create_single_time_series(df):
     )
 
     # Set the cap and floor
-    df['cap'] = (df['y'].max() * 2)
-    df['floor'] = 0
+    df_ts['cap'] = (df_ts['y'].max() * 2)
+    df_ts['floor'] = 0
 
-    model.fit(df)
+    # Fit the model
+    model.fit(df_ts)
+
+    # Create future dataframe to generate predictions for
+    df_future = model.make_future_dataframe(periods=1)
+    df_future['cap'] = (df_ts['y'].max() * 2)
+    df_future['floor'] = 0
 
     # Generate predictions
-    future = model.make_future_dataframe(periods=1)
+    df_preds = model.predict(df_future)
 
-    # Generate predictions
-    df_preds = model.predict(future)
-
+    # Create output dictionary
     ts_dict = pd.merge(
-        left=df,
-        right=df_preds,
+        left=df_ts,
+        right=df_preds.drop(['cap', 'floor'], axis=1),
         on='ds',
         how='outer'
     ).to_dict(orient='records')
