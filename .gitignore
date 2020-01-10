@@ -1,10 +1,15 @@
 # Custom
+sftp-config.json
 config.py
 gcp_token.json
 data/
 dask-worker-space/
 main.ipynb
 test.ipynb
+scratchpad.py
+ml_app/**/*.png
+ml_app/**/*.dot
+ml_app/**/*.ipynb
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
