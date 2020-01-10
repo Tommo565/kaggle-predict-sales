@@ -1,4 +1,5 @@
 from config.config import (
-    gcp_token, bucket_name, import_data_folder, project_id,
-    test_bucket_name, test_import_data_folder
+    local, gcp_token, bq_db, project_id, bucket_name, import_data_folder,
+    export_data_folder, local_export_folder, test_bucket_name,
+    test_import_data_folder, n_workers, threads_per_worker, memory_limit
 )
