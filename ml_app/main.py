@@ -1,14 +1,14 @@
 import os
-from dask.distributed import Client, progress
+from dask.distributed import LocalCluster, Client, progress
 from config import (
     local, gcp_token, project_id, bucket_name, import_data_folder,
     export_data_folder, local_export_folder, bq_db, n_workers,
-    threads_per_worker, dashboard_address
+    threads_per_worker, memory_limit
 )
 from parameters import (
     uid, import_datasets, target_rename, target, time_index,
     all_columns, all_features_time_index, all_features, categorical_features,
-    export_features_data, export_ts_data
+    export_merged_data, export_features_data, export_ts_data
 )
 from app.ingest.import_data import import_data, unpack_data
 from app.ingest.clean_data import (
@@ -30,7 +30,7 @@ if __name__ == '__main__':
     client = Client(
         n_workers=n_workers,
         threads_per_worker=threads_per_worker,
-        dashboard_address=dashboard_address
+        memory_limit=memory_limit
     )
 
     # Processing
@@ -41,20 +41,26 @@ if __name__ == '__main__':
     print('Cleaning & merging datasets')
     df_sl = clean_sales_data(df_sl, time_index, uid, target_rename)
     df_ip = clean_item_price_data(df_ip, time_index, uid)
-    df = merge_data(df_sl, df_ip, df_it, uid)
+    df = merge_data(df_sl, df_ip, df_it, uid, time_index)
+
+    print('Exporting merged data')
+    export_data(df, export_merged_data, local='N', gcs='N', bq='Y')
 
     print('Creating features')
     df, all_columns, all_features, all_features_time_index = (
         create_agg_features(
-            df, time_index, all_columns, all_features, all_features_time_index
+            df, time_index, all_columns, all_features,
+            all_features_time_index
         )
     )
 
     print('Exporting features')
-    export_data(df, export_features_data, local='Y', gcs='N', bq='Y')
+    export_data(df, export_features_data, local='N', gcs='N', bq='Y')
 
     print('Generating Time Series')
     df_ts_all = create_all_time_series(df, uid, time_index, target)
 
     print('Exporting Time Series')
-    export_data(df, export_ts_data, local='Y', gcs='N', bq='Y')
+    export_data(df_ts_all, export_ts_data, local='Y', gcs='N', bq='Y')
+
+    client.close()

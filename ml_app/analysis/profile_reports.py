@@ -3,25 +3,25 @@ import pandas_profiling
 
 
 analysis_parameters = [
+    # dict(
+    #     path='../data/input_data/sales_train.csv',
+    #     name='sales_train'
+    # ),
+    # dict(
+    #     path='../data/input_data/items.csv',
+    #     name='items'
+    # ),
+    # dict(
+    #     path='../data/input_data/item_categories.csv',
+    #     name='item_categories'
+    # ),
+    # dict(
+    #     path='../data/input_data/shops.csv',
+    #     name='shops'
+    # ),
     dict(
-        path='../data/input_data/sales_train.csv',
-        name='sales_train'
-    ),
-    dict(
-        path='../data/input_data/items.csv',
-        name='items'
-    ),
-    dict(
-        path='../data/input_data/item_categories.csv',
-        name='item_categories'
-    ),
-    dict(
-        path='../data/input_data/shops.csv',
-        name='shops'
-    ),
-    dict(
-        path='../data/output_data/merged_data.csv',
-        name='merged'
+        path='../data/output_data/features.csv',
+        name='features'
     )
 ]
 

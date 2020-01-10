@@ -8,9 +8,9 @@ def create_all_time_series(df, uid, time_index, target):
     """
     Summary
     -------
-    Groups a dataframe and generates a time series using Prophet for each group
-    via the create_single_time_series function which is delayed and processed
-    in parallel via Dask.
+    Groups a dataframe and generates a time series using Prophet for each uid
+    via the create_single_time_series function which is executed via
+    groupby / apply and processed in parallel via Dask delayed.
 
     Only records where the last 6 months sales are greater than 6 and the
     latest month is greater than 0 are processed.
@@ -52,6 +52,8 @@ def create_all_time_series(df, uid, time_index, target):
         }, axis=1)
     )
 
+    df_ts['y'] = df_ts['y'].fillna(0)
+
     # Group the dataframe by unique id
     df_ts_gp = df_ts.groupby(uid)
 
@@ -61,9 +63,9 @@ def create_all_time_series(df, uid, time_index, target):
     # Generate a time series for each appropriate record
     for group in df_ts_gp.groups:
         df_ts = df_ts_gp.get_group(group)
-        if (df_ts['y'].tail(6).sum() > 6) & (df_ts['y'].tail(1).sum() > 1):
-            ts_dict = create_single_time_series(df_ts)
-            ts_output.append(ts_dict)
+        # if (df_ts['y'].tail(6).sum() > 6) & (df_ts['y'].tail(1).sum() > 1):
+        ts_dict = create_single_time_series(df_ts, uid)
+        ts_output.append(ts_dict)
 
     # Compute the time series via dask
     ts_output = compute(ts_output)[0]
@@ -76,7 +78,7 @@ def create_all_time_series(df, uid, time_index, target):
         for record in item:
             records_list.append(record)
 
-    # Convert the output list to a dataframe
+    # Convert the output list of records to a dataframe
     df_ts_all = (
         pd.DataFrame(records_list)
         .rename({
@@ -89,7 +91,7 @@ def create_all_time_series(df, uid, time_index, target):
 
 
 @delayed
-def create_single_time_series(df_ts):
+def create_single_time_series(df_ts, uid):
     """
     Summary
     -------
@@ -119,16 +121,20 @@ def create_single_time_series(df_ts):
             ts_output.append(ts_dict)
     """
 
+    # Get the UID
+    uid_value = df_ts[uid].unique().tolist()[0]
+
     # Create the model
     model = Prophet(
         seasonality_mode='multiplicative',
         weekly_seasonality=False,
         daily_seasonality=False,
         yearly_seasonality=True,
-        growth='logistic'
+        growth='logistic',
+        changepoint_prior_scale=0.5,
     )
 
-    # Add monthly & yearly seasonality
+    # Add monthly seasonality
     model.add_seasonality(
         name='monthly',
         period=30.5,
@@ -137,25 +143,27 @@ def create_single_time_series(df_ts):
 
     # Set the cap and floor
     df_ts['cap'] = (df_ts['y'].max() * 2)
-    df_ts['floor'] = 0
+    df_ts['floor'] = 1
 
-    # Fit the model
-    model.fit(df_ts)
+    try:
+        # Fit the model & set to 2k max iterations
+        model.fit(df_ts, iter=2000)
 
-    # Create future dataframe to generate predictions for
-    df_future = model.make_future_dataframe(periods=1)
-    df_future['cap'] = (df_ts['y'].max() * 2)
-    df_future['floor'] = 0
+        # Create future dataframe to generate predictions for
+        df_future = model.make_future_dataframe(periods=1)
+        df_future['cap'] = (df_ts['y'].max() * 2)
+        df_future['floor'] = 1
 
-    # Generate predictions
-    df_preds = model.predict(df_future)
+        # Generate predictions
+        df_preds = model.predict(df_future)
+        df_preds[uid] = uid_value
 
-    # Create output dictionary
-    ts_dict = pd.merge(
-        left=df_ts,
-        right=df_preds.drop(['cap', 'floor'], axis=1),
-        on='ds',
-        how='outer'
-    ).to_dict(orient='records')
+        df_preds = (
+            df_preds.drop(['cap', 'floor'], axis=1)
+            .to_dict(orient='records')
+        )
 
-    return ts_dict
+        return df_preds
+
+    except:
+        return []
