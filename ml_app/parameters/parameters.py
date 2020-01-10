@@ -61,13 +61,23 @@ all_features_time_index = (
 # All feature columns for the dataframe
 all_features = categorical_features + numeric_features
 
+# Merged Data
+export_merged_data = dict(
+    project_id=project_id,
+    bucket_name=bucket_name,
+    export_data_folder=export_data_folder,
+    local_export_folder=local_export_folder,
+    filename='merged',
+    bq_db=bq_db
+)
+
 # Features export
 export_features_data = dict(
     project_id=project_id,
     bucket_name=bucket_name,
     export_data_folder=export_data_folder,
     local_export_folder=local_export_folder,
-    filename='features',
+    filename='agg_features',
     bq_db=bq_db
 )
 

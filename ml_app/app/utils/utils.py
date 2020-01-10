@@ -1,48 +1,150 @@
 import pandas as pd
+from dask import delayed
 from random import sample
+from google.cloud import bigquery
 
 
-def reindex_by_date(df, dates):
+def generate_date_range_df(df, time_index):
     """
     Summary
     -------
-    Generates a complete monthly DateTime index and reindexes a DateTime index
-    on a pandas dataframe to add in missing date values. Assigns a 0 value to
-    any fields which have are NaN.
-
-    Should be applied to a dataframe via groupby.
+    Generates a complete set of dates based upon the minimum and maximum
+    time_index values for the input DataFrame. This is then converted to
+    DataFrame format for merging.
 
     Parameters
     ----------
     df: pandas.DataFrame
-        The dataframe to re-index
+        The DataFrame to be exported
 
-    dates: pandas.DateTimeIndex
-        The dates to re-index with
+    time_index: str
+        The name of the column containing the time index
 
     Returns
     -------
+    df_dates: pandas.DataFrame
+        A full list of dates in DataFrame format
+    Example
+    -------
+    df_dates = generate_date_range_df(df, time_index)
+
+    """
+    df_dates = pd.DataFrame(
+        data=pd.date_range(
+            start=df[time_index].min(),
+            end=df[time_index].max(),
+            freq='M'
+        ),
+        columns=[time_index]
+    )
+
+    return df_dates
+
+
+@delayed
+def resample_infill_target(df, time_index, uid, df_dates):
+    """
+    Summary
+    -------
+    Resamples a dataframe containing item sales (target) data to monthly and
+    generates date rows for missing records via merging an exhaustive list of
+    dates generated via the generate_date_range_df function on to the
+    DataFrame.
+
+    Delayed and executed in parallel via Dask.
+
+    Parameters
+    ----------
     df: pandas.DataFrame
-        A reindexed dataframe with a full DateTime index
+        The DataFrame to resample and infill missing dates for.
+
+    time_index: str
+        The name of the column containing the time index
+
+    uid: str
+
+    df_dates: pandas.DataFrame
+        DataFrame containing an axhaustive list of date values to generate
+        missing date rows
+
+    Returns
+    -------
+    df_dict: dict
+        A list of records transformed from the DataFrame.
 
     Example
     --------
-    df = (
-        df.groupby(['item_id', 'item_category_id'])
-        .apply(reindex_by_date, dates=dates)
-    )
 
     """
 
-    df = df.drop('item_id', axis=1).reindex(dates).fillna(0)
-    return df
+    # Get the unique uid to deal with missing values
+    item_id = df[uid].unique().tolist()[0]
+
+    df_list = (
+        df.resample('M')
+        .sum()
+        .fillna(0)
+        .merge(right=df_dates, on=time_index, how='outer')
+        .assign(item_id=item_id)
+        .fillna(0)
+        .to_dict(orient='records')
+    )
+
+    return df_list
+
+
+@delayed
+def resample_infill_item_price(df, time_index, uid, df_dates):
+    """
+    Summary
+    -------
+    Resamples a dataframe containing item price data to monthly and generates
+    date rows for missing records via merging an exhaustive list of dates
+    generated via the generate_date_range_df function on to the DataFrame.
+
+    Delayed and executed in parallel via Dask.
+
+    Parameters
+    ----------
+    df: pandas.DataFrame
+        The DataFrame to resample and infill missing dates for.
+
+    time_index: str
+        The name of the column containing the time index
+
+    uid: str
+
+    df_dates: pandas.DataFrame
+        DataFrame containing an axhaustive list of date values to generate
+        missing date rows
+
+    Returns
+    -------
+    df_dict: dict
+        A list of records transformed from the DataFrame.
+
+    Example
+    --------
+
+    """
+    df_list = (
+        df.resample('M')
+        .mean()
+        .fillna(method='ffill')
+        .reset_index()
+        .merge(right=df_dates, on=time_index, how='outer')
+        .fillna(method='ffill')
+        .to_dict(orient='records')
+    )
+
+    return df_list
 
 
 def sample_df(df, uid, n):
     """
     Summary
     -------
-    Returns a sample dataframe of n unique id's from withing the input
+    Returns a sample dataframe of n unique id's randomly sampled from the input
     dataframe.
 
     Parameters
@@ -78,12 +180,52 @@ def sample_df(df, uid, n):
     return df
 
 
+def sample_top_records(df, uid, sort_col, n):
+    """
+    Summary
+    -------
+    Returns a sample dataframe of n unique id's randomly sampled from the input
+    dataframe.
+
+    Parameters
+    ----------
+
+    df: pandas.DataFrame
+        The dataframe to be randomly sampled.
+
+    uid: str
+        The unique id columns to select sample records from.
+
+    n: int
+        The number of samples to select.
+
+    Returns
+    -------
+    df: pandas.DataFrame
+        A dataframe containing n uid samples.
+
+    Example
+    -------
+    df = sample_df(df, uid, n)
+    """
+
+    df = df.sort_values(sort_col, ascending=False)
+
+    uid_list = df[uid].unique().tolist()[:n]
+
+    df_sm = df[
+        df[uid].isin(uid_list)
+    ]
+
+    return df_sm
+
+
 def export_data(df, export_data, local='Y', gcs='Y', bq='Y'):
     """
     Summary
     -------
-    Exports a dataframe to a GCS bucket and/or local folder specified in the 
-    export_data parameter
+    Exports a dataframe to a GCS bucket, BQ table or local folder depending
+    upon the options specified in the parameters.
 
     Parameters
     ----------
@@ -104,9 +246,7 @@ def export_data(df, export_data, local='Y', gcs='Y', bq='Y'):
 
     Returns
     -------
-    df: pandas.DataFrame
-        The dataframe to be exported. Note that no transformation to this
-        occurs within the function.
+    None
 
     Example
     -------
@@ -141,9 +281,15 @@ def export_data(df, export_data, local='Y', gcs='Y', bq='Y'):
         )
 
     if bq == 'Y':
+
         print(f'    Exporting {filename} to BigQuery')
-        df.to_gbq(
-            project_id=project_id,
-            destination_table=f'{bq_db}.{filename}',
-            if_exists='replace'
+        bq_client = bigquery.Client(
+            project=project_id
         )
+
+        table_id = f'{bq_db}.{filename}'
+        job = bq_client.load_table_from_dataframe(
+            dataframe=df,
+            destination=table_id
+        )
+        job.result()

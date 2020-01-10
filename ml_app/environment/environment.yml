@@ -1,6 +1,7 @@
 name: kaggle-predict-sales
 channels:
   - conda-forge
+  - districtdatalabs
   - defaults
 dependencies:
   - python=3.7.3
@@ -39,5 +40,8 @@ dependencies:
   - gcsfs
   - pytest
   - pandas-profiling
+  - yellowbrick
+  - pydot
+  - mlflow
 prefix: /Users/tomewing/anaconda3/envs/kaggle-predict-sales
 

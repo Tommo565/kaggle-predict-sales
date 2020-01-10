@@ -1,5 +1,8 @@
 import pandas as pd
-from app.utils.utils import reindex_by_date
+from dask import compute
+from app.utils.utils import (
+    generate_date_range_df, resample_infill_target, resample_infill_item_price
+)
 
 
 def clean_sales_data(df_sl, time_index, uid, target_rename):
@@ -44,31 +47,37 @@ def clean_sales_data(df_sl, time_index, uid, target_rename):
         .sort_values([uid, time_index])
     )
 
-    # Resample to monthly
-    df_sl = (
+    # Generate total date range for the df to infill missing rows
+    df_dates = generate_date_range_df(df_sl, time_index)
+
+    # Group the DataFrame to process uid records individually
+    df_sl_gp = (
         df_sl.set_index(time_index)
         .groupby(uid)
-        .resample('M')
-        .sum()
-        .drop(uid, axis=1)
-        .reset_index()
     )
 
-    # Generate total monthly date range for the df
-    dates = pd.date_range(
-        start=df_sl[time_index].min(),
-        end=df_sl[time_index].max(),
-        freq='M'
-    )
+    # Create an output list to append records to
+    df_sl_output = []
 
-    # Infill missing months
-    df_sl = (
-        df_sl.set_index('date')
-        .groupby('item_id')
-        .apply(reindex_by_date, dates)
-        .reset_index()
-        .rename({'level_1': time_index}, axis=1)
-    )
+    for group in df_sl_gp.groups:
+        df_sl_ind = df_sl_gp.get_group(group)
+        df_sl_ind = resample_infill_target(
+            df_sl_ind, time_index, uid, df_dates
+        )
+        df_sl_output.append(df_sl_ind)
+
+    # Compute the output
+    df_sl_output = compute(df_sl_output)[0]
+
+    # Create a blank list to process the output into
+    records_list = []
+
+    # Create a list of records for conversion to a dataframe
+    for item in df_sl_output:
+        for record in item:
+            records_list.append(record)
+
+    df_sl = pd.DataFrame(records_list)
 
     return df_sl
 
@@ -77,8 +86,6 @@ def clean_item_price_data(df_ip, time_index, uid):
     """
     Summary
     -------
-    Cleans and transforms the item price data contained in the sales dataframe.
-    Returns this as a new dataframe.
 
     Parameters
     ----------
@@ -102,19 +109,45 @@ def clean_item_price_data(df_ip, time_index, uid):
 
     """
 
-    # Take the mean value of the overall item price data
-    df_ip = (
+    # Generate total monthly date range for the df
+    dates = generate_date_range_df(df_ip, time_index)
+
+    # Group the DataFrame to process uid records individually
+    df_ip_gp = (
         df_ip
+        .assign(date=pd.to_datetime(df_ip[time_index]))
         .set_index(time_index)
         .groupby(uid)
-        .mean()
-        .reset_index()
     )
+
+    # Create an output list to append records to
+    df_ip_output = []
+
+    # Resample to monthly & infill missing date rows
+    for group in df_ip_gp.groups:
+        df_ip_ind = df_ip_gp.get_group(group)
+        df_ip_ind = resample_infill_item_price(
+            df_ip_ind, time_index, uid, dates
+        )
+        df_ip_output.append(df_ip_ind)
+
+    # Compute the output
+    df_ip_output = compute(df_ip_output)[0]
+
+    # Create a blank list to process the output into
+    records_list = []
+
+    # Create a list of records for conversion to a dataframe
+    for item in df_ip_output:
+        for record in item:
+            records_list.append(record)
+
+    df_ip = pd.DataFrame(records_list)
 
     return df_ip
 
 
-def merge_data(df_sl, df_ip, df_it, uid):
+def merge_data(df_sl, df_ip, df_it, uid, time_index):
     """
     Summary
     -------
@@ -145,7 +178,7 @@ def merge_data(df_sl, df_ip, df_it, uid):
     """
 
     df = (
-        df_sl.merge(right=df_ip, on=uid, how='left')
+        df_sl.merge(right=df_ip, on=[uid, time_index], how='left')
         .merge(right=df_it, on=uid, how='left')
     )
 
