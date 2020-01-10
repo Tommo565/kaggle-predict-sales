@@ -64,11 +64,20 @@ def create_agg_features(
     )
     """
 
-    df_fea = df.set_index(time_index).groupby(all_features).agg({
-        'target': ['min', 'max', 'std', 'sum', 'mean', 'median']
-    }).reset_index()
+    # Generate aggregate features
+    df_fea = (
+        df.set_index(time_index)
+        .groupby(all_features).agg({
+            'target': ['min', 'max', 'std', 'sum', 'mean', 'median']
+        })
+        .reset_index()
+        .fillna(0)
+    )
+
+    # Format the column names
     df_fea.columns = ['_'.join(col) for col in df_fea.columns]
 
+    # Rename columns
     # TODO: Solve this programatically
     df_fea = df_fea.rename({
         'item_id_': 'item_id',
@@ -76,6 +85,7 @@ def create_agg_features(
         'item_price_': 'item_price'
     }, axis=1)
 
+    # Merge on to the master df
     df = pd.merge(
         left=df,
         right=df_fea,
