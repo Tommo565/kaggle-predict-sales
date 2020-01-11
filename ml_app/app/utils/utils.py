@@ -4,7 +4,7 @@ from random import sample
 from google.cloud import bigquery
 
 
-def generate_date_range_df(df, time_index):
+def generate_date_range(df, time_index):
     """
     Summary
     -------
@@ -77,20 +77,21 @@ def resample_infill_target(df, time_index, uid, df_dates):
 
     """
 
-    # Get the unique uid to deal with missing values
+    # Get the unique uid to infill missing values
     item_id = df[uid].unique().tolist()[0]
 
-    df_list = (
+    df = (
         df.resample('M')
         .sum()
         .fillna(0)
         .merge(right=df_dates, on=time_index, how='outer')
+        .sort_values(by=time_index)
         .assign(item_id=item_id)
         .fillna(0)
         .to_dict(orient='records')
     )
 
-    return df_list
+    return df
 
 
 @delayed
@@ -127,17 +128,24 @@ def resample_infill_item_price(df, time_index, uid, df_dates):
     --------
 
     """
-    df_list = (
+
+    # Get the unique uid to infill missing values
+    item_id = df[uid].unique().tolist()[0]
+
+    df = (
         df.resample('M')
         .mean()
         .fillna(method='ffill')
         .reset_index()
         .merge(right=df_dates, on=time_index, how='outer')
+        .assign(item_id=item_id)
+        .sort_values(by=time_index)
+        .fillna(method='bfill')
         .fillna(method='ffill')
         .to_dict(orient='records')
     )
 
-    return df_list
+    return df
 
 
 def sample_df(df, uid, n):
@@ -282,14 +290,23 @@ def export_data(df, export_data, local='Y', gcs='Y', bq='Y'):
 
     if bq == 'Y':
 
-        print(f'    Exporting {filename} to BigQuery')
-        bq_client = bigquery.Client(
-            project=project_id
-        )
+        # # Convert the date so BQ doesn't get confused
+        # if time_index in df.columns:
+        #     df[time_index] = df['date'].dt.strftime('%d-%b-%Y')
 
-        table_id = f'{bq_db}.{filename}'
-        job = bq_client.load_table_from_dataframe(
-            dataframe=df,
-            destination=table_id
+        # print(f'    Exporting {filename} to BigQuery')
+        # bq_client = bigquery.Client(
+        #     project=project_id
+        # )
+
+        # table_id = f'{bq_db}.{filename}'
+        # job = bq_client.load_table_from_dataframe(
+        #     dataframe=df,
+        #     destination=table_id
+        # )
+        # job.result()
+
+        df.to_gbq(
+            destination_table=f'{bq_db}.{filename}',
+            if_exists='replace'
         )
-        job.result()

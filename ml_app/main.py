@@ -44,7 +44,9 @@ if __name__ == '__main__':
     df = merge_data(df_sl, df_ip, df_it, uid, time_index)
 
     print('Exporting merged data')
-    export_data(df, export_merged_data, local='N', gcs='N', bq='Y')
+    export_data(
+        df, export_merged_data, local='N', gcs='N', bq='Y'
+    )
 
     print('Creating features')
     df, all_columns, all_features, all_features_time_index = (
@@ -55,12 +57,16 @@ if __name__ == '__main__':
     )
 
     print('Exporting features')
-    export_data(df, export_features_data, local='N', gcs='N', bq='Y')
+    export_data(
+        df, export_features_data,  local='N', gcs='N', bq='Y'
+    )
 
     print('Generating Time Series')
     df_ts_all = create_all_time_series(df, uid, time_index, target)
 
     print('Exporting Time Series')
-    export_data(df_ts_all, export_ts_data, local='Y', gcs='N', bq='Y')
+    export_data(
+        df_ts_all, export_ts_data, local='N', gcs='N', bq='Y'
+    )
 
     client.close()

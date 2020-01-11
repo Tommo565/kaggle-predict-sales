@@ -1,7 +1,8 @@
 import pandas as pd
+import numpy as np
 from dask import compute
 from app.utils.utils import (
-    generate_date_range_df, resample_infill_target, resample_infill_item_price
+    generate_date_range, resample_infill_target, resample_infill_item_price
 )
 
 
@@ -48,7 +49,7 @@ def clean_sales_data(df_sl, time_index, uid, target_rename):
     )
 
     # Generate total date range for the df to infill missing rows
-    df_dates = generate_date_range_df(df_sl, time_index)
+    df_dates = generate_date_range(df_sl, time_index)
 
     # Group the DataFrame to process uid records individually
     df_sl_gp = (
@@ -109,16 +110,17 @@ def clean_item_price_data(df_ip, time_index, uid):
 
     """
 
-    # Generate total monthly date range for the df
-    dates = generate_date_range_df(df_ip, time_index)
+    # Convert to DateTime
+    df_ip[time_index] = pd.to_datetime(df_ip[time_index])
 
     # Group the DataFrame to process uid records individually
     df_ip_gp = (
-        df_ip
-        .assign(date=pd.to_datetime(df_ip[time_index]))
-        .set_index(time_index)
+        df_ip.set_index(time_index)
         .groupby(uid)
     )
+
+    # Generate total monthly date range for the df
+    df_dates = generate_date_range(df_ip, time_index)
 
     # Create an output list to append records to
     df_ip_output = []
@@ -127,7 +129,7 @@ def clean_item_price_data(df_ip, time_index, uid):
     for group in df_ip_gp.groups:
         df_ip_ind = df_ip_gp.get_group(group)
         df_ip_ind = resample_infill_item_price(
-            df_ip_ind, time_index, uid, dates
+            df_ip_ind, time_index, uid, df_dates
         )
         df_ip_output.append(df_ip_ind)
 
@@ -147,7 +149,7 @@ def clean_item_price_data(df_ip, time_index, uid):
     return df_ip
 
 
-def merge_data(df_sl, df_ip, df_it, uid, time_index):
+def merge_data(df_sl, df_ip, df_it, uid, time_index, target):
     """
     Summary
     -------
@@ -181,5 +183,25 @@ def merge_data(df_sl, df_ip, df_it, uid, time_index):
         df_sl.merge(right=df_ip, on=[uid, time_index], how='left')
         .merge(right=df_it, on=uid, how='left')
     )
+
+    return df
+
+
+def downcast_data(df, target):
+    """
+
+    """
+
+    # Convert columns
+    df[target] = df[target].astype('int')
+    df['item_price'] = df['item_price'].round(decimals=2)
+
+    # Get float & int cols
+    float_cols = [col for col in df if df[col].dtype == "float64"]
+    int_cols = [col for col in df if df[col].dtype in ["int64", "int32"]]
+
+    # Downcast float & int cols
+    df[float_cols] = df[float_cols].astype(np.float32)
+    df[int_cols] = df[int_cols].astype(np.int16)
 
     return df
