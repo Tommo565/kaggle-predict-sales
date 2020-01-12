@@ -61,6 +61,56 @@ all_features_time_index = (
 # All feature columns for the dataframe
 all_features = categorical_features + numeric_features
 
+# Col
+ts_drop_cols = [
+    'cap',
+    'floor',
+    'trend_lower',
+    'trend_upper',
+    'Christmas Day',
+    'Christmas Day_lower',
+    'Christmas Day_upper',
+    'Defender of the Fatherland Day',
+    'Defender of the Fatherland Day_lower',
+    'Defender of the Fatherland Day_upper',
+    "International Women's Day",
+    "International Women's Day_lower",
+    "International Women's Day_upper",
+    'National Flag Day',
+    'National Flag Day_lower',
+    'National Flag Day_upper',
+    "New Year's Day",
+    "New Year's Day_lower",
+    "New Year's Day_upper",
+    'Orthodox Christmas Day',
+    'Orthodox Christmas Day_lower',
+    'Orthodox Christmas Day_upper',
+    'Russia Day',
+    'Russia Day_lower',
+    'Russia Day_upper',
+    'Spring and Labour Day',
+    'Spring and Labour Day_lower',
+    'Spring and Labour Day_upper',
+    'Unity Day',
+    'Unity Day_lower',
+    'Unity Day_upper',
+    'Victory Day',
+    'Victory Day_lower',
+    'Victory Day_upper',
+    'monthly',
+    'monthly_lower',
+    'monthly_upper',
+    'multiplicative_terms',
+    'multiplicative_terms_lower',
+    'multiplicative_terms_upper',
+    'yearly',
+    'yearly_lower',
+    'yearly_upper',
+    'additive_terms',
+    'additive_terms_lower',
+    'additive_terms_upper'
+]
+
 # Merged Data
 export_merged_data = dict(
     project_id=project_id,

@@ -192,10 +192,6 @@ def downcast_data(df, target):
 
     """
 
-    # Convert columns
-    df[target] = df[target].astype('int')
-    df['item_price'] = df['item_price'].round(decimals=2)
-
     # Get float & int cols
     float_cols = [col for col in df if df[col].dtype == "float64"]
     int_cols = [col for col in df if df[col].dtype in ["int64", "int32"]]

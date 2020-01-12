@@ -114,8 +114,14 @@ def unpack_data(df_list):
             # Sales data
             df_sl = df['df'][['date', 'item_id', 'item_cnt_day']].copy()
 
+            # Convert columns
+            df_sl['item_cnt_day'] = df_sl['item_cnt_day'].astype('int')
+
             # Item price data
             df_ip = df['df'][['item_id', 'date', 'item_price']].copy()
+
+            # Convert columns
+            df_ip['item_price'] = df_ip['item_price'].round(decimals=2)
 
         elif df['df_name'] == 'df_it':
 

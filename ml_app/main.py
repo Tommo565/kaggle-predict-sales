@@ -8,7 +8,7 @@ from config import (
 from parameters import (
     uid, import_datasets, target_rename, target, time_index,
     all_columns, all_features_time_index, all_features, categorical_features,
-    export_merged_data, export_features_data, export_ts_data
+    ts_drop_cols, export_merged_data, export_features_data, export_ts_data
 )
 from app.ingest.import_data import import_data, unpack_data
 from app.ingest.clean_data import (
@@ -63,7 +63,9 @@ if __name__ == '__main__':
     )
 
     print('Generating Time Series')
-    df_ts_all = create_all_time_series(df, uid, time_index, target)
+    df_ts_all = create_all_time_series(
+        df, uid, time_index, target, ts_drop_cols
+    )
 
     print('Exporting Time Series')
     export_data(

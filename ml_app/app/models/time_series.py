@@ -4,7 +4,7 @@ from dask import delayed, compute
 from fbprophet import Prophet
 
 
-def create_all_time_series(df, uid, time_index, target):
+def create_all_time_series(df, uid, time_index, target, ts_drop_cols):
     """
     Summary
     -------
@@ -30,7 +30,7 @@ def create_all_time_series(df, uid, time_index, target):
         The name of the column containing the time index
 
     target: str
-        The name od the column containing the target variable to predict
+        The name of the column containing the target variable to predict
 
 
     Returns
@@ -64,7 +64,7 @@ def create_all_time_series(df, uid, time_index, target):
     for group in df_ts_gp.groups:
         df_ts = df_ts_gp.get_group(group)
         # if (df_ts['y'].tail(6).sum() > 6) & (df_ts['y'].tail(1).sum() > 1):
-        ts_dict = create_single_time_series(df_ts, uid)
+        ts_dict = create_single_time_series(df_ts, uid, ts_drop_cols)
         ts_output.append(ts_dict)
 
     # Compute the time series via dask
@@ -91,7 +91,7 @@ def create_all_time_series(df, uid, time_index, target):
 
 
 @delayed
-def create_single_time_series(df_ts, uid):
+def create_single_time_series(df_ts, uid, ts_drop_cols):
     """
     Summary
     -------
@@ -141,6 +141,9 @@ def create_single_time_series(df_ts, uid):
         fourier_order=5
     )
 
+    # Add Russian Holidays
+    model.add_country_holidays(country_name='Russia')
+
     # Set the cap and floor
     df_ts['cap'] = (df_ts['y'].max() * 2)
     df_ts['floor'] = 1
@@ -159,7 +162,7 @@ def create_single_time_series(df_ts, uid):
         df_preds[uid] = uid_value
 
         df_preds = (
-            df_preds.drop(['cap', 'floor'], axis=1)
+            df_preds.drop(ts_drop_cols, axis=1)
             .to_dict(orient='records')
         )
 
