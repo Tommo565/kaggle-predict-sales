@@ -71,10 +71,13 @@ Details of the various processing modules... TBC
 
 ## TODO
 
-1. Parallelize Resampling
-2. Add in shop_id as a feature
-3. Export to BQ
-4. Run in Cloud
+1. Downcasting
+2. MLFlow
+3. Lagging + TS Stuff
+4. Yellowbrick
+5. Results
+6. API
+7. More Feature Engineering
 
 ## Useful Links
 * [Kaggle Predict Future Sales](https://www.kaggle.com/c/competitive-data-science-predict-future-sales)
