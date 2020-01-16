@@ -2,7 +2,8 @@ import pandas as pd
 import numpy as np
 from dask import compute
 from app.utils.utils import (
-    generate_date_range, resample_infill_target, resample_infill_item_price
+    generate_date_range, resample_infill_target, resample_infill_item_price,
+    downcast_data
 )
 
 
@@ -183,21 +184,5 @@ def merge_data(df_sl, df_ip, df_it, uid, time_index, target):
         df_sl.merge(right=df_ip, on=[uid, time_index], how='left')
         .merge(right=df_it, on=uid, how='left')
     )
-
-    return df
-
-
-def downcast_data(df, target):
-    """
-
-    """
-
-    # Get float & int cols
-    float_cols = [col for col in df if df[col].dtype == "float64"]
-    int_cols = [col for col in df if df[col].dtype in ["int64", "int32"]]
-
-    # Downcast float & int cols
-    df[float_cols] = df[float_cols].astype(np.float32)
-    df[int_cols] = df[int_cols].astype(np.int16)
 
     return df

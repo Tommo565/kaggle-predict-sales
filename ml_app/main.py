@@ -1,5 +1,5 @@
 import os
-from dask.distributed import LocalCluster, Client, progress
+from dask.distributed import Client, progress
 from config import (
     local, gcp_token, project_id, bucket_name, import_data_folder,
     export_data_folder, local_export_folder, bq_db, n_workers,
