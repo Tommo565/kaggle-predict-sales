@@ -8,13 +8,15 @@ from config import (
 from parameters import (
     uid, import_datasets, target_rename, target, time_index,
     all_columns, all_features_time_index, all_features, categorical_features,
-    ts_drop_cols, export_merged_data, export_features_data, export_ts_data
+    ts_drop_cols, cols_to_lag, export_merged_data, export_features_data,
+    export_ts_data
 )
 from app.ingest.import_data import import_data, unpack_data
 from app.ingest.clean_data import (
     clean_sales_data, clean_item_price_data, merge_data
 )
 from app.feature_engineering.create_agg_features import create_agg_features
+from app.feature_engineering.create_lag_features import create_lag_features
 from app.utils.utils import downcast_data, export_data
 from app.models.time_series import create_all_time_series
 
@@ -50,7 +52,7 @@ if __name__ == '__main__':
     )
 
     print('Creating features')
-    df, all_columns, all_features, all_features_time_index = (
+    df_fea, all_columns, all_features, all_features_time_index = (
         create_agg_features(
             df, time_index, all_columns, all_features,
             all_features_time_index
@@ -62,14 +64,17 @@ if __name__ == '__main__':
         df, export_features_data,  local='N', gcs='N', bq='Y'
     )
 
-    print('Generating Time Series')
-    df_ts_all = create_all_time_series(
+    print('Creating Time Series')
+    df_ts = create_all_time_series(
         df, uid, time_index, target, ts_drop_cols
     )
 
     print('Exporting Time Series')
     export_data(
-        df_ts_all, export_ts_data, local='N', gcs='N', bq='Y'
+        df_ts, export_ts_data, local='N', gcs='N', bq='Y'
     )
+
+    print('Creating Lagged features')
+    df = create_lag_features(df_fea, df_ts, uid, time_index, cols_to_lag)
 
     client.close()
