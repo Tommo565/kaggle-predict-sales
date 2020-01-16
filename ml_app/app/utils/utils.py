@@ -310,3 +310,17 @@ def export_data(df, export_data, local='Y', gcs='Y', bq='Y'):
             destination_table=f'{bq_db}.{filename}',
             if_exists='replace'
         )
+
+
+def import_from_bq(query, project_id):
+    """
+
+    """
+    df = (
+        pd.read_gbq(
+            query=query,
+            project_id=project_id
+        )
+    )
+
+    return df

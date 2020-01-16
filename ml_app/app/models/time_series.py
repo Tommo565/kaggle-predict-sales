@@ -21,7 +21,7 @@ def create_all_time_series(df, uid, time_index, target, ts_drop_cols):
     Parameters
     ----------
     df: pandas.DataFrame
-        The dataframe containing the records to generate a time series for.
+        A dataframe containing the records to generate a time series for.
 
     uid: str
         The name of the column containing the unique id
@@ -36,8 +36,8 @@ def create_all_time_series(df, uid, time_index, target, ts_drop_cols):
     Returns
     -------
     df_ts_all: pandas.DataFrame
-        A pandas dataframe containing time series data for the relevent records
-        of the input dataframe
+        A pandas DataFrame containing time series data for the relevent records
+        of the input DataFrame
 
     Example
     --------
@@ -54,7 +54,7 @@ def create_all_time_series(df, uid, time_index, target, ts_drop_cols):
 
     df_ts['y'] = df_ts['y'].fillna(0)
 
-    # Group the dataframe by unique id
+    # Group the DataFrame by unique id
     df_ts_gp = df_ts.groupby(uid)
 
     # Create an output list to append results to
@@ -70,15 +70,15 @@ def create_all_time_series(df, uid, time_index, target, ts_drop_cols):
     # Compute the time series via dask
     ts_output = compute(ts_output)[0]
 
-    # Create an empty list to iterate the results into
+    # Create an empty list to append results to
     records_list = []
 
-    # Create a list of records for conversion to a dataframe
+    # Create a list of records for conversion to a DataFrame
     for item in ts_output:
         for record in item:
             records_list.append(record)
 
-    # Convert the output list of records to a dataframe
+    # Convert the output list of records to a DataFrame
     df_ts_all = (
         pd.DataFrame(records_list)
         .rename({
@@ -146,7 +146,7 @@ def create_single_time_series(df_ts, uid, ts_drop_cols):
 
     # Set the cap and floor
     df_ts['cap'] = (df_ts['y'].max() * 2)
-    df_ts['floor'] = 1
+    df_ts['floor'] = 0
 
     try:
         # Fit the model & set to 2k max iterations
@@ -155,7 +155,7 @@ def create_single_time_series(df_ts, uid, ts_drop_cols):
         # Create future dataframe to generate predictions for
         df_future = model.make_future_dataframe(periods=1)
         df_future['cap'] = (df_ts['y'].max() * 2)
-        df_future['floor'] = 1
+        df_future['floor'] = 0
 
         # Generate predictions
         df_preds = model.predict(df_future)

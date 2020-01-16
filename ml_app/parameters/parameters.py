@@ -111,6 +111,11 @@ ts_drop_cols = [
     'additive_terms_upper'
 ]
 
+# Lagging
+cols_to_lag = [target, 'yhat', 'yhat_upper', 'yhat_lower']
+
+# Exports
+
 # Merged Data
 export_merged_data = dict(
     project_id=project_id,
