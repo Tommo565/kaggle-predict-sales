@@ -18,6 +18,7 @@ My work on the [Kaggle Predict Future Sales](https://www.kaggle.com/c/competitiv
 * Using GCP services including Compute Engine, BigQuery, Cloud Storage (GCS)
 * Modelling with [MLFlow](https://mlflow.org/) (TBC)
 * ML Visualisation with [Yellowbrick](https://www.scikit-yb.org/en/latest/) (TBC)
+* Outlier Detection with [PyOD](https://pyod.readthedocs.io/en/latest/)
 
 Technical examples of some of the above concepts are available via the Jupyter Notebooks saved in the `./ml_app/examples` directory.
 
@@ -106,4 +107,5 @@ Details of the various processing modules... TBC
 * [Yellowbrick](https://www.scikit-yb.org/en/latest/)
 * [Awesome Machine Learning](https://github.com/josephmisiti/awesome-machine-learning)
 * [Awesome Production Machine Learning](https://github.com/EthicalML/awesome-production-machine-learning)
-
+* [PyOD](https://pyod.readthedocs.io/en/latest/)
+* [PyOD Tutorial](https://www.analyticsvidhya.com/blog/2019/02/outlier-detection-python-pyod/)
