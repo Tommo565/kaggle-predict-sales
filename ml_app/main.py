@@ -13,7 +13,8 @@ from parameters import (
 )
 from app.ingest.import_data import import_data, unpack_data
 from app.ingest.clean_data import (
-    clean_sales_data, clean_item_price_data, merge_data, downcast_data
+    clean_sales_data, clean_item_price_data, merge_data, remove_records,
+    downcast_data
 )
 from app.feature_engineering.create_agg_features import create_agg_features
 from app.feature_engineering.create_lag_features import create_lag_features
@@ -43,14 +44,15 @@ if __name__ == '__main__':
     print('Cleaning & merging datasets')
     df_sl = clean_sales_data(df_sl, time_index, uid, target_rename)
     df_ip = clean_item_price_data(df_ip, time_index, uid)
-    df = merge_data(df_sl, df_ip, df_it, uid, time_index)
+    df = merge_data(df_sl, df_ip, df_it, uid, time_index, target)
+    df, df_remove = remove_records(df, uid, target)
     df = sample_df(df, uid, 100)
     df = downcast_data(df, target)
 
-    # print('Exporting merged data')
-    # export_data(
-    #     df, export_merged_data, local='N', gcs='N', bq='Y'
-    # )
+    print('Exporting merged data')
+    export_data(
+        df, export_merged_data, local='Y', gcs='N', bq='N'
+    )
 
     print('Creating features')
     df_fea, all_columns, all_features, all_features_time_index = (
@@ -60,20 +62,22 @@ if __name__ == '__main__':
         )
     )
 
-    # print('Exporting features')
-    # export_data(
-    #     df, export_features_data,  local='N', gcs='N', bq='Y'
-    # )
+    print('Exporting features')
+    export_data(
+        df, export_features_data,  local='Y', gcs='N', bq='N'
+    )
 
     print('Creating Time Series')
     df_ts = create_all_time_series(
         df, uid, time_index, target, ts_drop_cols
     )
 
-    # print('Exporting Time Series')
-    # export_data(
-    #     df_ts, export_ts_data, local='N', gcs='N', bq='Y'
-    # )
+    print('Exporting Time Series')
+    export_data(
+        df_ts, export_ts_data, local='Y', gcs='N', bq='N'
+    )
+
+    # ffill missing values here
 
     print('Creating Lagged features')
     df = create_lag_features(df_fea, df_ts, uid, time_index, cols_to_lag)
