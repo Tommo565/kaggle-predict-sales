@@ -186,3 +186,44 @@ def merge_data(df_sl, df_ip, df_it, uid, time_index, target):
     )
 
     return df
+
+
+def remove_records(df, uid, target):
+    """
+
+    """
+
+    df_gp = df.groupby([uid])
+
+    remove_list = []
+    keep_list = []
+
+    for group in df_gp.groups:
+        df_item = df_gp.get_group(group)
+
+        # If last 3 obs are 0
+        if df_item[target][:-3].sum() == 0:
+            remove_list.append(df_item.to_dict(orient='records'))
+
+        # If total sales <= 10
+        elif df_item[target].sum() <= 10:
+            remove_list.append(df_item.to_dict(orient='records'))
+
+        else:
+            keep_list.append(df_item.to_dict(orient='records'))
+
+    df = []
+    df_remove = []
+
+    for item in keep_list:
+        for record in item:
+            df.append(record)
+
+    for item in remove_list:
+        for record in item:
+            df_remove.append(record)
+
+    df = pd.DataFrame(df)
+    df_remove = pd.DataFrame(df_remove)
+
+    return df, df_remove

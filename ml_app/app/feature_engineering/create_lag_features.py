@@ -117,17 +117,16 @@ def lag_columns(df, time_index, cols_to_lag):
         lag_output.append(df_ind)
 
     """
-    df_copy = df.copy()
-    df_copy.set_index(time_index)
+    df.set_index(time_index)
 
     for col in cols_to_lag:
 
-        df_copy[f'{col}_lag1'] = df[col].copy().shift(periods=1)
-        df_copy[f'{col}_lag2'] = df[col].copy().shift(periods=2)
-        df_copy[f'{col}_lag3'] = df[col].copy().shift(periods=3)
-        df_copy.reset_index()
+        df[f'{col}_lag1'] = df[col].shift(periods=1)
+        df[f'{col}_lag2'] = df[col].shift(periods=2)
+        df[f'{col}_lag3'] = df[col].shift(periods=3)
+        df.reset_index()
 
         # Remove the first 3 records
-        df_copy = df_copy[3:]
+        df_copy = df[3:]
 
     return df_copy.to_dict(orient='records')
